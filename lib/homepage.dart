@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:task8/auth_service.dart';
 import 'package:task8/crud_service.dart';
+import 'package:task8/login.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -14,6 +16,13 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   bool showFavoritesOnly = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _quantityController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +46,18 @@ class _HomePageState extends State<HomePage> {
             ),
             tooltip: 'Filter Favorites',
           ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await AuthService().signOut();
+              if (!context.mounted) return;
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => LoginPage()),
+              );
+            },
+          ), // IconButton
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -47,6 +68,9 @@ class _HomePageState extends State<HomePage> {
       body: StreamBuilder<QuerySnapshot>(
         stream: service.getItems(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -190,12 +214,9 @@ class _HomePageState extends State<HomePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (_nameController.text.isNotEmpty &&
-                  _quantityController.text.isNotEmpty) {
-                service.addItems(
-                  _nameController.text,
-                  int.parse(_quantityController.text),
-                );
+              final quantity = int.tryParse(_quantityController.text);
+              if (_nameController.text.isNotEmpty && quantity != null) {
+                service.addItems(_nameController.text, quantity);
                 Navigator.pop(context);
               }
             },
@@ -252,13 +273,9 @@ class _HomePageState extends State<HomePage> {
           ),
           ElevatedButton(
             onPressed: () {
-              if (_nameController.text.isNotEmpty &&
-                  _quantityController.text.isNotEmpty) {
-                service.updateItem(
-                  item.id,
-                  _nameController.text,
-                  int.parse(_quantityController.text),
-                );
+              final quantity = int.tryParse(_quantityController.text);
+              if (_nameController.text.isNotEmpty && quantity != null) {
+                service.updateItem(item.id, _nameController.text, quantity);
                 Navigator.pop(context);
               }
             },

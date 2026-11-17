@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:task8/homepage.dart'; // added
-import 'firebase_options.dart';
+import 'package:task8/auth_service.dart';
+import 'package:task8/firebase_options.dart';
+import 'package:task8/homepage.dart';
+import 'package:task8/login.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +30,21 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const HomePage(), // changed
+      home: StreamBuilder(
+        stream: AuthService().userStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData) {
+            return HomePage();
+          } else {
+            return LoginPage();
+          }
+        },
+      ),
     );
   }
 }
